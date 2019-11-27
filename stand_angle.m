@@ -1,4 +1,4 @@
-function [lwrst_indx_clust,rwrst_indx_clust,struct_stand_angle] = stand_angle(init_struct,p_num,Mrk_Data,ind_start,ind_end)
+function [struct_stand_angle] = stand_angle(init_struct,p_num,Mrk_Data,ind_start,ind_end)
 % function [struct_stand_angle] = stand_angle(init_struct,p_num,FP_data,ind_start,ind_end)
 % 
 %  This function calculates the body angles while saving
@@ -55,6 +55,12 @@ mrkr_RWRSTy = Mrk_Data.RWRSTY(:); % RWRSTX
 mrkr_LWRSTz = Mrk_Data.LWRSTZ(:); % LWRSTZ
 mrkr_LWRSTy = Mrk_Data.LWRSTY(:); % LWRSTX
 
+% Left HIP (LHIP)
+mrkr_LHIPy = Mrk_Data.LHIPY(:); % LHIPY
+
+% Right HIP (LHIP)
+mrkr_RHIPy = Mrk_Data.RHIPY(:); % RHIPY
+
 
 % Filter Data
 mrkr_TPHDx_filter = filtfilt(init_struct.b_mrk,init_struct.a_mrk,mrkr_TPHDx)/1000; % m
@@ -77,12 +83,14 @@ mrkr_IPx_filter = filtfilt(init_struct.b_mrk,init_struct.a_mrk,mrkr_IPx)/1000; %
 mrkr_IPy_filter = filtfilt(init_struct.b_mrk,init_struct.a_mrk,mrkr_IPy)/1000; % m
 mrkr_IPz_filter = filtfilt(init_struct.b_mrk,init_struct.a_mrk,mrkr_IPz)/1000; % m
 
-mrkr_RWRSTz_filter = filtfilt(init_struct.b_mrk,init_struct.a_mrk,mrkr_RWRSTz)/1; % m
-mrkr_LWRSTz_filter = filtfilt(init_struct.b_mrk,init_struct.a_mrk,mrkr_LWRSTz)/1; % m
+mrkr_RWRSTz_filter = filtfilt(init_struct.b_mrk,init_struct.a_mrk,mrkr_RWRSTz)/1000; % m
+mrkr_LWRSTz_filter = filtfilt(init_struct.b_mrk,init_struct.a_mrk,mrkr_LWRSTz)/1000; % m
 
-mrkr_RWRSTy_filter = filtfilt(init_struct.b_mrk,init_struct.a_mrk,mrkr_RWRSTy)/1; % m
-mrkr_LWRSTy_filter = filtfilt(init_struct.b_mrk,init_struct.a_mrk,mrkr_LWRSTy)/1; % m
+mrkr_RWRSTy_filter = filtfilt(init_struct.b_mrk,init_struct.a_mrk,mrkr_RWRSTy)/1000; % m
+mrkr_LWRSTy_filter = filtfilt(init_struct.b_mrk,init_struct.a_mrk,mrkr_LWRSTy)/1000; % m
 
+mrkr_LHIPy_filter = filtfilt(init_struct.b_mrk,init_struct.a_mrk,mrkr_LHIPy)/1000; % m
+mrkr_RHIPy_filter = filtfilt(init_struct.b_mrk,init_struct.a_mrk,mrkr_RHIPy)/1000; % m
 
 % Marker Data Standing
 stand_range=num2str((ind_end-ind_start)/init_struct.Fs);% Time range 
@@ -122,6 +130,12 @@ stand_RWRSTy = mrkr_RWRSTy_filter(ind_start:ind_end);
 stand_LWRSTz = mrkr_LWRSTz_filter(ind_start:ind_end);
 stand_LWRSTy = mrkr_LWRSTy_filter(ind_start:ind_end);
 
+% Left HIP (LHIP)
+stand_LHIPy = mrkr_LHIPy_filter(ind_start:ind_end);
+
+% Right HIP (LHIP)
+stand_RHIPy = mrkr_RHIPy_filter(ind_start:ind_end);
+
 clear mrkr_* % clear unnecessary variables 
 
 disp('Angles: ');
@@ -153,6 +167,10 @@ stand_head_ang = atan2(stand_head_v2(:,2),stand_head_v2(:,1))-atan2(stand_head_v
 
 stand_back_ang = atan2(stand_back_v2(:,2),stand_back_v2(:,1))-atan2(stand_back_v1(:,2),stand_back_v1(:,1)); %  BACK ANG
 
+% Distance from Hip
+rwrst_dist = (stand_RHIPy - stand_RWRSTy);
+lwrst_dist = (stand_LHIPy - stand_LWRSTy);
+
 disp('    Calculations Done');
 
 %% CLUSTERING
@@ -164,7 +182,7 @@ lwrst_clust_mat = horzcat(stand_LWRSTy,stand_LWRSTz); % left wrist matrix
 rwrst_clust_mat = transpose(rwrst_clust_mat); % right wrist matrix transpose
 lwrst_clust_mat = transpose(lwrst_clust_mat); % left wrist matrix transpose
 
-min_dist=25; % min distance for cluster
+min_dist=.18; % min distance for cluster
 
 % Function of Mean Shift Cluster to form initial clusters on entire standing Right Wrist data
 [rwrst_clustCent,rwrst_point2cluster,rwrst_clustMembsCell] = MeanShiftCluster(rwrst_clust_mat,min_dist);
@@ -215,10 +233,33 @@ for k=1:lwrst_numClust
     end
 end
 
-Lwrst_indx = horzcat(lwrst_indx_clust{:}); % Left wrist clean indexes
-Rwrst_indx = horzcat(rwrst_indx_clust{:}); % Right wrist clean indexes
+% Choose smallest cluster and keep the other for finding points common to both
+if length(lwrst_indx_clust)>length(rwrst_indx_clust)
+    
+    min_wrst_unclean = rwrst_clustMembsCell; % Right wrist unclean
+    min_wrst_indx_clust = rwrst_indx_clust; % Right wrist minimum 
+    comp_indx_clust = horzcat(lwrst_indx_clust{:}); % Left wrist clean indexes
 
-wrst_indx = intersect(Lwrst_indx,Rwrst_indx); % Clean Wrist combined indexes
+elseif length(rwrst_indx_clust)>length(lwrst_indx_clust)
+    
+    min_wrst_unclean = lwrst_clustMembsCell; % Left wrist unclean
+    min_wrst_indx_clust = lwrst_indx_clust; % Left wrist minimum
+    comp_indx_clust = horzcat(rwrst_indx_clust{:}); % Right wrist clean indexes
+
+else
+    min_wrst_unclean = rwrst_clustMembsCell; % Right wrist unclean
+    min_wrst_indx_clust = rwrst_indx_clust; % Right wrist minimum
+    comp_indx_clust = horzcat(lwrst_indx_clust{:}); % Left wrist clean indexes
+end
+
+% Keep index common to both right and left wrist clusters
+for i=1:length(min_wrst_indx_clust)
+    clust_wrst_indx{i,1} = intersect(min_wrst_indx_clust{i,1},comp_indx_clust);
+end
+
+full_wrst_indx = horzcat(clust_wrst_indx{:}); % Clean Wrist combined indexes
+
+assignin('base','clust_wrst_indx',clust_wrst_indx);
 
 disp('    Clustering');
 
@@ -226,20 +267,26 @@ disp('    Clustering');
 
 % Unclean
 figure;
-cVec = 'bgrcmykbgrcmykbgrcmykbgrcmyk';%, cVec = [cVec cVec];
-subplot(2,1,1);
-hold on;
-plot(stand_time,stand_RWRSTz,[cVec(k) '.']);
-title("RIGHT WRIST ")
-ylabel('Right Wrist Z'),xlabel(strcat('Time (',stand_range,'secs)'));
-hold off;
+cVec = 'bgrcmykbgrcmykbgrcmykbgrcmyk'; % cVec = colour vector;
+for k = 1:length(min_wrst_indx_clust)
+    
+    wrst_num=strcat("Wrst Clust ",num2str(k));
+        
+    subplot(2,1,1);
+    hold on;
+    plot(stand_time(min_wrst_unclean{k}),stand_RWRSTz(min_wrst_unclean{k}),[cVec(k) '.'],'DisplayName',wrst_num);
+    title("RIGHT WRIST ")
+    ylabel('Right Wrist Z'),xlabel(strcat('Time (',stand_range,'secs)'));
+    hold off;
 
-subplot(2,1,2);
-hold on;
-plot(stand_time,stand_LWRSTz,[cVec(k) '.']);
-title("LEFT WRIST")
-ylabel('Left Wrist Z'),xlabel(strcat('Time (',stand_range,'secs)'));
-hold off;
+    subplot(2,1,2);
+    hold on;
+    plot(stand_time(min_wrst_unclean{k}),stand_LWRSTz(min_wrst_unclean{k}),[cVec(k) '.'],'DisplayName',wrst_num);
+    title("LEFT WRIST")
+    ylabel('Left Wrist Z'),xlabel(strcat('Time (',stand_range,'secs)'));
+    hold off;
+end
+
 if init_struct.plot_save % Save if asked
     saveas(gcf,strcat(p_num,'_wrist_elevation.jpg'));
 end
@@ -249,20 +296,25 @@ end
 
 % Clean
 figure;
-cVec = 'bgrcmykbgrcmykbgrcmykbgrcmyk';%, cVec = [cVec cVec];
-subplot(2,1,1);
-hold on;
-plot(stand_time(wrst_indx),stand_RWRSTz(wrst_indx),[cVec(k) '.']);
-title("RIGHT WRIST Clean")
-ylabel('Right Wrist Z'),xlabel(strcat('Time (',stand_range,'secs)'));
-hold off;
+for k = 1:length(clust_wrst_indx)
+    
+    wrst_num=strcat("Wrst Clust ",num2str(k));
+    
+    subplot(2,1,1);
+    hold on;
+    plot(stand_time(clust_wrst_indx{k}),stand_RWRSTz(clust_wrst_indx{k}),[cVec(k) '.'],'DisplayName',wrst_num);
+    title("RIGHT WRIST Clean")
+    ylabel('Right Wrist Z'),xlabel(strcat('Time (',stand_range,'secs)'));
+    hold off;
 
-subplot(2,1,2);
-hold on;
-plot(stand_time(wrst_indx),stand_LWRSTz(wrst_indx),[cVec(k) '.']);
-title("LEFT WRIST Clean")
-ylabel('Left Wrist Z'),xlabel(strcat('Time (',stand_range,'secs)'));
-hold off;
+    subplot(2,1,2);
+    hold on;
+    plot(stand_time(clust_wrst_indx{k}),stand_LWRSTz(clust_wrst_indx{k}),[cVec(k) '.'],'DisplayName',wrst_num);
+    title("LEFT WRIST Clean")
+    ylabel('Left Wrist Z'),xlabel(strcat('Time (',stand_range,'secs)'));
+    hold off;
+end
+
 if init_struct.plot_save % Save if asked
     saveas(gcf,strcat(p_num,'clean_wrist_elevation.jpg'));
 end
@@ -275,20 +327,26 @@ disp('    Wrist Plots');
 %% SHOULDER ANGLES
 
 figure;
-cVec = 'bgrcmykbgrcmykbgrcmykbgrcmyk';%, cVec = [cVec cVec];
-subplot(2,1,1);
-hold on;
-plot(stand_time(wrst_indx),stand_SHO_xy_ang(wrst_indx),[cVec(k) '.']);
-title("Shoulder XY Angle")
-ylabel('Shoulder XY'),xlabel(strcat('Time (',stand_range,'secs)'));
-hold off;
+for k = 1:length(clust_wrst_indx)
+    
+    wrst_num=strcat("Wrst Clust ",num2str(k));
+    
+    subplot(2,1,1);
+    hold on;
+    plot(stand_time(clust_wrst_indx{k}),stand_SHO_xy_ang(clust_wrst_indx{k}),[cVec(k) '.'],'DisplayName',wrst_num);
+    title("Shoulder XY Angle")
+    ylabel('Shoulder XY'),xlabel(strcat('Time (',stand_range,'secs)'));
+    hold off;
 
-subplot(2,1,2);
-hold on;
-plot(stand_time(wrst_indx),stand_SHO_xz_ang(wrst_indx),[cVec(k) '.']);
-title("Shoulder XZ Angle")
-ylabel('Shoulder XZ'),xlabel(strcat('Time (',stand_range,'secs)'));
-hold off;
+    subplot(2,1,2);
+    hold on;
+    plot(stand_time(clust_wrst_indx{k}),stand_SHO_xz_ang(clust_wrst_indx{k}),[cVec(k) '.'],'DisplayName',wrst_num);
+    title("Shoulder XZ Angle")
+    ylabel('Shoulder XZ'),xlabel(strcat('Time (',stand_range,'secs)'));
+    hold off;
+    
+end    
+    
 if init_struct.plot_save % Save if asked
     saveas(gcf,strcat(p_num,'shoulder_ang.jpg'));
 end
@@ -299,20 +357,24 @@ end
 %% NECK & BACK ANGLES
 
 figure;
-cVec = 'bgrcmykbgrcmykbgrcmykbgrcmyk';%, cVec = [cVec cVec];
-subplot(2,1,1);
-hold on;
-plot(stand_time(wrst_indx),stand_head_ang(wrst_indx),[cVec(k) '.']);
-title("Neck Angle")
-ylabel('Neck'),xlabel(strcat('Time (',stand_range,'secs)'));
-hold off;
+for k = 1:length(clust_wrst_indx)
+    
+    wrst_num=strcat("Wrst Clust ",num2str(k));
+    subplot(2,1,1);
+    hold on;
+    plot(stand_time(clust_wrst_indx{k}),stand_head_ang(clust_wrst_indx{k}),[cVec(k) '.'],'DisplayName',wrst_num);
+    title("Neck Angle")
+    ylabel('Neck'),xlabel(strcat('Time (',stand_range,'secs)'));
+    hold off;
 
-subplot(2,1,2);
-hold on;
-plot(stand_time(wrst_indx),stand_back_ang(wrst_indx),[cVec(k) '.']);
-title("Back Angle")
-ylabel('Back'),xlabel(strcat('Time (',stand_range,'secs)'));
-hold off;
+    subplot(2,1,2);
+    hold on;
+    plot(stand_time(clust_wrst_indx{k}),stand_back_ang(clust_wrst_indx{k}),[cVec(k) '.'],'DisplayName',wrst_num);
+    title("Back Angle")
+    ylabel('Back'),xlabel(strcat('Time (',stand_range,'secs)'));
+    hold off;
+end
+
 if init_struct.plot_save % Save if asked
     saveas(gcf,strcat(p_num,'back_and_neck_ang.jpg'));
 end
@@ -320,10 +382,316 @@ if ~init_struct.plot_view % Keep graph if asked
     close;
 end
 
+%% DISTANCE FROM BODY
+
+figure;
+for k = 1:length(clust_wrst_indx)
+    
+    wrst_num=strcat("Wrst Clust ",num2str(k));
+    subplot(2,1,1);
+    hold on;
+    plot(stand_time(clust_wrst_indx{k}),rwrst_dist(clust_wrst_indx{k}),[cVec(k) '.'],'DisplayName',wrst_num);
+    title("Right Hand Distance From Body")
+    ylabel('RHand dist from body'),xlabel(strcat('Time (',stand_range,'secs)'));
+    hold off;
+
+    subplot(2,1,2);
+    hold on;
+    plot(stand_time(clust_wrst_indx{k}),lwrst_dist(clust_wrst_indx{k}),[cVec(k) '.'],'DisplayName',wrst_num);
+    title("Left Hand Distance From Body")
+    ylabel('LHand dist from body'),xlabel(strcat('Time (',stand_range,'secs)'));
+    hold off;
+end
+
+if init_struct.plot_save % Save if asked
+    saveas(gcf,strcat(p_num,'dist_from_body.jpg'));
+end
+if ~init_struct.plot_view % Keep graph if asked
+    close;
+end
+
+%% ANGLE PARAMETERS 
+
+clust_struct_stand_angle = struct;
+struct_stand_angle = struct;
+
+if length(clust_wrst_indx)>1 % More than one cluster
+    for k=1:length(clust_wrst_indx)
+        if length(clust_wrst_indx{k})>1
+            %% Cluster Angle Parameters
+            
+            % Cluster info
+            clust_struct_stand_angle(k).indx = clust_wrst_indx{k}'; % index
+            clust_struct_stand_angle(k).data_pnts = length(clust_wrst_indx{k}); % data points
+            clust_struct_stand_angle(k).time = length(clust_wrst_indx{k})/init_struct.Fs; % time
+            
+            % Angles
+            clust_struct_stand_angle(k).clust_SHO_xy_ang = stand_SHO_xy_ang(clust_struct_stand_angle(k).indx); % SHOULDER XY angle of specific cluster in degrees
+            clust_struct_stand_angle(k).clust_SHO_xz_ang = stand_SHO_xz_ang(clust_struct_stand_angle(k).indx); % SHOULDER XZ angle of specific cluster in degrees
+            clust_struct_stand_angle(k).clust_head_ang = stand_head_ang(clust_struct_stand_angle(k).indx); % HEAD angle of specific cluster in degrees
+            clust_struct_stand_angle(k).clust_back_ang = stand_back_ang(clust_struct_stand_angle(k).indx); % BACK angle of specific cluster in degrees
+            clust_struct_stand_angle(k).clust_rwrst_dist = rwrst_dist(clust_struct_stand_angle(k).indx); % RHAND dist of specific cluster in meters
+            clust_struct_stand_angle(k).clust_lwrst_dist = lwrst_dist(clust_struct_stand_angle(k).indx); % RHAND dist of specific cluster in meters
+            
+            % Mean
+            clust_struct_stand_angle(k).clust_mean_SHO_xy_ang = mean(clust_struct_stand_angle(k).clust_SHO_xy_ang);
+            clust_struct_stand_angle(k).clust_mean_SHO_xz_ang = mean(clust_struct_stand_angle(k).clust_SHO_xz_ang);
+            clust_struct_stand_angle(k).clust_mean_head_ang = mean(clust_struct_stand_angle(k).clust_head_ang);
+            clust_struct_stand_angle(k).clust_mean_back_ang = mean(clust_struct_stand_angle(k).clust_back_ang);
+            clust_struct_stand_angle(k).clust_mean_rwrst_dist = mean(clust_struct_stand_angle(k).clust_rwrst_dist);
+            clust_struct_stand_angle(k).clust_mean_lwrst_dist = mean(clust_struct_stand_angle(k).clust_lwrst_dist);
+            
+            % Standard-deviation
+            clust_struct_stand_angle(k).clust_std_SHO_xy_ang = std(clust_struct_stand_angle(k).clust_SHO_xy_ang);
+            clust_struct_stand_angle(k).clust_std_SHO_xz_ang = std(clust_struct_stand_angle(k).clust_SHO_xz_ang);
+            clust_struct_stand_angle(k).clust_std_head_ang = std(clust_struct_stand_angle(k).clust_head_ang);
+            clust_struct_stand_angle(k).clust_std_back_ang = std(clust_struct_stand_angle(k).clust_back_ang);
+            clust_struct_stand_angle(k).clust_std_rwrst_dist = std(clust_struct_stand_angle(k).clust_rwrst_dist);
+            clust_struct_stand_angle(k).clust_std_lwrst_dist = std(clust_struct_stand_angle(k).clust_lwrst_dist);
+                        
+        end
+    end 
+% Only one cluster     
+else
+    % Cluster info
+    clust_struct_stand_angle.indx = full_wrst_indx'; % index
+    clust_struct_stand_angle.data_pnts = length(full_wrst_indx); % data points
+    clust_struct_stand_angle.time = length(full_wrst_indx)/init_struct.Fs; % time
+    
+    % Angles
+    clust_struct_stand_angle.clust_SHO_xy_ang = stand_SHO_xy_ang(clust_struct_stand_angle.indx); % SHOULDER XY angle of specific cluster in degrees
+    clust_struct_stand_angle.clust_SHO_xz_ang = stand_SHO_xz_ang(clust_struct_stand_angle.indx); % SHOULDER XZ angle of specific cluster in degrees
+    clust_struct_stand_angle.clust_head_ang = stand_head_ang(clust_struct_stand_angle.indx); % HEAD angle of specific cluster in degrees
+    clust_struct_stand_angle.clust_back_ang = stand_back_ang(clust_struct_stand_angle.indx); % BACK angle of specific cluster in degrees
+    clust_struct_stand_angle.clust_rwrst_dist = rwrst_dist(clust_struct_stand_angle.indx); % RHAND dist of specific cluster in meters
+    clust_struct_stand_angle.clust_lwrst_dist = lwrst_dist(clust_struct_stand_angle.indx); % RHAND dist of specific cluster in meters
+
+    % Mean
+    clust_struct_stand_angle.clust_mean_SHO_xy_ang = mean(clust_struct_stand_angle.clust_SHO_xy_ang);
+    clust_struct_stand_angle.clust_mean_SHO_xz_ang = mean(clust_struct_stand_angle.clust_SHO_xz_ang);
+    clust_struct_stand_angle.clust_mean_head_ang = mean(clust_struct_stand_angle.clust_head_ang);
+    clust_struct_stand_angle.clust_mean_back_ang = mean(clust_struct_stand_angle.clust_back_ang);
+    clust_struct_stand_angle.clust_mean_rwrst_dist = mean(clust_struct_stand_angle.clust_rwrst_dist);
+    clust_struct_stand_angle.clust_mean_lwrst_dist = mean(clust_struct_stand_angle.clust_lwrst_dist);
+
+    % Standard-deviation
+    clust_struct_stand_angle.clust_std_SHO_xy_ang = std(clust_struct_stand_angle.clust_SHO_xy_ang);
+    clust_struct_stand_angle.clust_std_SHO_xz_ang = std(clust_struct_stand_angle.clust_SHO_xz_ang);
+    clust_struct_stand_angle.clust_std_head_ang = std(clust_struct_stand_angle.clust_head_ang);
+    clust_struct_stand_angle.clust_std_back_ang = std(clust_struct_stand_angle.clust_back_ang);
+    clust_struct_stand_angle.clust_std_rwrst_dist = std(clust_struct_stand_angle.clust_rwrst_dist);
+    clust_struct_stand_angle.clust_std_lwrst_dist = std(clust_struct_stand_angle.clust_lwrst_dist);
+                        
+end
+
+%% Full COP Parameters
+
+struct_stand_angle.full_indx = full_wrst_indx';
+struct_stand_angle.time = length(full_wrst_indx)/init_struct.Fs; 
+
+% Angles
+struct_stand_angle.full_SHO_xy_ang = stand_SHO_xy_ang(full_wrst_indx); % SHOULDER XY angle in degrees
+struct_stand_angle.full_SHO_xz_ang = stand_SHO_xz_ang(full_wrst_indx); % SHOULDER XZ angle in degrees
+struct_stand_angle.full_head_ang = stand_head_ang(full_wrst_indx); % HEAD angle in degrees
+struct_stand_angle.full_back_ang = stand_back_ang(full_wrst_indx); % BACK angle in degrees
+struct_stand_angle.full_rwrst_dist = rwrst_dist(full_wrst_indx); % RHAND dist in meters
+struct_stand_angle.full_lwrst_dist = lwrst_dist(full_wrst_indx); % RHAND dist in meters
+
+ % Mean
+struct_stand_angle.full_mean_SHO_xy_ang = mean(struct_stand_angle.full_SHO_xy_ang);
+struct_stand_angle.full_mean_SHO_xz_ang = mean(struct_stand_angle.full_SHO_xz_ang);
+struct_stand_angle.full_mean_head_ang = mean(struct_stand_angle.full_head_ang);
+struct_stand_angle.full_mean_back_ang = mean(struct_stand_angle.full_back_ang);
+struct_stand_angle.full_mean_rwrst_dist = mean(struct_stand_angle.full_rwrst_dist);
+struct_stand_angle.full_mean_lwrst_dist = mean(struct_stand_angle.full_lwrst_dist);
+
+% Standard-deviation
+struct_stand_angle.full_std_SHO_xy_ang = std(struct_stand_angle.full_SHO_xy_ang);
+struct_stand_angle.full_std_SHO_xz_ang = std(struct_stand_angle.full_SHO_xz_ang);
+struct_stand_angle.full_std_head_ang = std(struct_stand_angle.full_head_ang);
+struct_stand_angle.full_std_back_ang = std(struct_stand_angle.full_back_ang);
+struct_stand_angle.full_std_rwrst_dist = std(struct_stand_angle.full_rwrst_dist);
+struct_stand_angle.full_std_lwrst_dist = std(struct_stand_angle.full_lwrst_dist);
+
+%% RELATIVE PARAMETERS
+
+% parameters adjusted by cluster-size (n*P/n) where n= num of points and
+%                                                   P= parameter of interest
+
+% Relative Mean
+struct_stand_angle.clust_rel_mean_SHO_xy_ang = (sum([clust_struct_stand_angle.clust_mean_SHO_xy_ang].*[clust_struct_stand_angle.data_pnts]))/sum([clust_struct_stand_angle.data_pnts]);
+struct_stand_angle.clust_rel_mean_SHO_xz_ang = (sum([clust_struct_stand_angle.clust_mean_SHO_xz_ang].*[clust_struct_stand_angle.data_pnts]))/sum([clust_struct_stand_angle.data_pnts]);
+struct_stand_angle.clust_rel_mean_head_ang = (sum([clust_struct_stand_angle.clust_mean_head_ang].*[clust_struct_stand_angle.data_pnts]))/sum([clust_struct_stand_angle.data_pnts]);
+struct_stand_angle.clust_rel_mean_back_ang = (sum([clust_struct_stand_angle.clust_mean_back_ang].*[clust_struct_stand_angle.data_pnts]))/sum([clust_struct_stand_angle.data_pnts]);
+struct_stand_angle.clust_rel_mean_rwrst_dist = (sum([clust_struct_stand_angle.clust_mean_rwrst_dist].*[clust_struct_stand_angle.data_pnts]))/sum([clust_struct_stand_angle.data_pnts]);
+struct_stand_angle.clust_rel_mean_lwrst_dist = (sum([clust_struct_stand_angle.clust_mean_lwrst_dist].*[clust_struct_stand_angle.data_pnts]))/sum([clust_struct_stand_angle.data_pnts]);
+
+% Relative Standard-deviation
+struct_stand_angle.clust_rel_std_SHO_xy_ang = (sum([clust_struct_stand_angle.clust_std_SHO_xy_ang].*[clust_struct_stand_angle.data_pnts]))/sum([clust_struct_stand_angle.data_pnts]);
+struct_stand_angle.clust_rel_std_SHO_xz_ang = (sum([clust_struct_stand_angle.clust_std_SHO_xz_ang].*[clust_struct_stand_angle.data_pnts]))/sum([clust_struct_stand_angle.data_pnts]);
+struct_stand_angle.clust_rel_std_head_ang = (sum([clust_struct_stand_angle.clust_std_head_ang].*[clust_struct_stand_angle.data_pnts]))/sum([clust_struct_stand_angle.data_pnts]);
+struct_stand_angle.clust_rel_std_back_ang = (sum([clust_struct_stand_angle.clust_std_back_ang].*[clust_struct_stand_angle.data_pnts]))/sum([clust_struct_stand_angle.data_pnts]);
+struct_stand_angle.clust_rel_std_rwrst_dist = (sum([clust_struct_stand_angle.clust_std_rwrst_dist].*[clust_struct_stand_angle.data_pnts]))/sum([clust_struct_stand_angle.data_pnts]);
+struct_stand_angle.clust_rel_std_lwrst_dist = (sum([clust_struct_stand_angle.clust_std_lwrst_dist].*[clust_struct_stand_angle.data_pnts]))/sum([clust_struct_stand_angle.data_pnts]);
+
+disp("    Parameters Calculated");
+
+%% CONTINOUS PARAMETERS
+
+% For clusters
+clust_continous_angle=struct;
+
+for i=1:length(clust_struct_stand_angle)
+   clear cont*
+   
+    cont_SHOxy_ang = [clust_struct_stand_angle(i).clust_SHO_xy_ang,clust_struct_stand_angle(i).indx]; % create matrix of value and index
+    cont_SHOxy_ang = sortrows(cont_SHOxy_ang,2); % sort according to values
+    cont_SHO_xy_ang = rollstat(cont_SHOxy_ang,360,360); % calculate rolling window stats (120Hz * 3sec = 360 points)
+    clust_continous_angle(i).SHO_xy_ang = [cont_SHO_xy_ang.stats]; % save to struct
+
+    cont_SHOxz_ang = [clust_struct_stand_angle(i).clust_SHO_xz_ang,clust_struct_stand_angle(i).indx];
+    cont_SHOxz_ang = sortrows(cont_SHOxz_ang,2); 
+    cont_SHO_xz_ang = rollstat(cont_SHOxz_ang,360,360);
+    clust_continous_angle(i).SHO_xz_ang = [cont_SHO_xz_ang.stats];
+
+    cont_Head_ang = [clust_struct_stand_angle(i).clust_head_ang,clust_struct_stand_angle(i).indx];
+    cont_Head_ang = sortrows(cont_Head_ang,2); 
+    cont_head_ang = rollstat(cont_Head_ang,360,360);
+    clust_continous_angle(i).head_ang = [cont_head_ang.stats];
+
+    cont_Back_ang = [clust_struct_stand_angle(i).clust_back_ang,clust_struct_stand_angle(i).indx];
+    cont_Back_ang = sortrows(cont_Back_ang,2); 
+    cont_back_ang = rollstat(cont_Back_ang,360,360);
+    clust_continous_angle(i).back_ang = [cont_back_ang.stats];
+
+    cont_Rwrst_dist = [clust_struct_stand_angle(i).clust_rwrst_dist,clust_struct_stand_angle(i).indx];
+    cont_Rwrst_dist = sortrows(cont_Rwrst_dist,2); 
+    cont_rwrst_dist = rollstat(cont_Rwrst_dist,360,360);
+    clust_continous_angle(i).rwrst_dist = [cont_rwrst_dist.stats];
+
+    cont_Lwrst_dist = [clust_struct_stand_angle(i).clust_lwrst_dist,clust_struct_stand_angle(i).indx];
+    cont_Lwrst_dist = sortrows(cont_Lwrst_dist,2); 
+    cont_lwrst_dist = rollstat(cont_Lwrst_dist,360,360);
+    clust_continous_angle(i).lwrst_dist = [cont_lwrst_dist.stats];
+
+end
+
+% For full
+full_continous_angle = struct;
+
+clear cont*
+
+cont_SHOxy_ang = [struct_stand_angle.full_SHO_xy_ang,struct_stand_angle.full_indx]; % create matrix of value and index
+cont_SHOxy_ang = sortrows(cont_SHOxy_ang,2); % sort according to values
+cont_SHO_xy_ang = rollstat(cont_SHOxy_ang,360,360); % calculate rolling window stats (120Hz * 3sec = 360 points)
+full_continous_angle.SHO_xy_ang = [cont_SHO_xy_ang.stats]; % save to struct
+
+cont_SHOxz_ang = [struct_stand_angle.full_SHO_xz_ang,struct_stand_angle.full_indx];
+cont_SHOxz_ang = sortrows(cont_SHOxz_ang,2); 
+cont_SHO_xz_ang = rollstat(cont_SHOxz_ang,360,360);
+full_continous_angle.SHO_xz_ang = [cont_SHO_xz_ang.stats];
+
+cont_Head_ang = [struct_stand_angle.full_head_ang,struct_stand_angle.full_indx];
+cont_Head_ang = sortrows(cont_Head_ang,2); 
+cont_head_ang = rollstat(cont_Head_ang,360,360);
+full_continous_angle.head_ang = [cont_head_ang.stats];
+
+cont_Back_ang = [struct_stand_angle.full_back_ang,struct_stand_angle.full_indx];
+cont_Back_ang = sortrows(cont_Back_ang,2); 
+cont_back_ang = rollstat(cont_Back_ang,360,360);
+full_continous_angle.back_ang = [cont_back_ang.stats];
+
+cont_Rwrst_dist = [struct_stand_angle.full_rwrst_dist,struct_stand_angle.full_indx];
+cont_Rwrst_dist = sortrows(cont_Rwrst_dist,2); 
+cont_rwrst_dist = rollstat(cont_Rwrst_dist,360,360);
+full_continous_angle.rwrst_dist = [cont_rwrst_dist.stats];
+
+cont_Lwrst_dist = [struct_stand_angle.full_lwrst_dist,struct_stand_angle.full_indx];
+cont_Lwrst_dist = sortrows(cont_Lwrst_dist,2); 
+cont_lwrst_dist = rollstat(cont_Lwrst_dist,360,360);
+full_continous_angle.lwrst_dist = [cont_lwrst_dist.stats];
+
+disp("    Continous Parameters Calculated");
 
 %% SAVE .MAT FILE
 
-struct_stand_angle=struct;
+save(strcat(p_num,'_clust_stand_angle.mat'),'clust_struct_stand_angle');
+save(strcat(p_num,'_stand_angle.mat'),'struct_stand_angle');
 
-disp('.MAT Saved');
+save(strcat(p_num,'_clust_continous_angle.mat'),'clust_continous_angle');
+save(strcat(p_num,'_full_continous_angle.mat'),'full_continous_angle');
+
+disp('    .MAT Saved');
+
+%% PLOT CONTINOUS PARAMETERS
+
+% cluster continous plots
+struct_var_name = fieldnames(clust_continous_angle);
+figure;
+for i=1:length(struct_var_name)
+    for k=1:length(clust_continous_angle)
+    
+        clust_num = strcat("Cluster ",num2str(k));
+        len_interval = length([clust_continous_angle(k).(struct_var_name{i}).mean]);
+        
+        subplot(2,1,1);
+        hold on;
+%         bar(linspace(1,len_interval,len_interval),[clust_continous_COP(k).(struct_var_name{i}).mean],'grouped',cVec(k),'DisplayName',clust_num);
+        plot([clust_continous_angle(k).(struct_var_name{i}).mean],cVec(k),'DisplayName',clust_num);
+        title(strcat(struct_var_name(i),' Mean'),'Interpreter','none');
+        ylabel(strcat('3 sec',struct_var_name{i},' mean'),'Interpreter','none'),xlabel('Intervals');
+        legend('-DynamicLegend');
+        legend('show');
+        hold off;
+
+        subplot(2,1,2);
+        hold on;
+%         bar(linspace(1,len_interval,len_interval),[clust_continous_COP(k).(struct_var_name{i}).sd],'grouped',cVec(k),'DisplayName',clust_num);
+        plot([clust_continous_angle(k).(struct_var_name{i}).sd],cVec(k),'DisplayName',clust_num);
+        title(strcat(struct_var_name(i),' Std'),'Interpreter','none');
+        ylabel(strcat('3 sec',struct_var_name(i),' std'),'Interpreter','none'),xlabel('Intervals');
+        legend('-DynamicLegend');
+        legend('show');
+        hold off;
+        
+    end
+    if init_struct.plot_save % Save if asked
+        saveas(gcf,strcat(p_num,'_clust_contionus_',struct_var_name{i},'.jpg'));
+    end
+    if ~init_struct.plot_view % Keep graph if asked
+        close;
+    end
+    
+end
+
+% full continous plots
+struct_var_name = fieldnames(full_continous_angle);
+figure;
+for i=1:length(struct_var_name)
+    
+    subplot(2,1,1);
+    hold on;
+    bar([full_continous_angle.(struct_var_name{i}).mean]);
+    title(strcat(struct_var_name(i),' Mean'),'Interpreter','none');
+    ylabel(strcat('3 sec',struct_var_name{i},' mean'),'Interpreter','none'),xlabel('Intervals');
+    hold off;
+
+    subplot(2,1,2);
+    hold on;
+    bar([full_continous_angle.(struct_var_name{i}).sd]);
+    title(strcat(struct_var_name(i),' Std'),'Interpreter','none');
+    ylabel(strcat('3 sec',struct_var_name(i),' std'),'Interpreter','none'),xlabel('Intervals');
+    hold off;
+    
+    if init_struct.plot_save % Save if asked
+        saveas(gcf,strcat(p_num,'_full_contionus_',struct_var_name{i},'.jpg'));
+    end
+    if ~init_struct.plot_view % Keep graph if asked
+        close;
+    end
+    
+end
+
+disp("    Continous Plots Saved");
+
 end

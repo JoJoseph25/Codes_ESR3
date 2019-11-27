@@ -1,5 +1,5 @@
-function [struct_stand_COP] = stand_COP(init_struct,p_num,FP_data,ind_start,ind_end)
-% function [struct_stand_COP] = stand_COP(init_struct,p_num,FP_data,ind_start,ind_end)
+function [struct_stand_COP] = stand_COP(init_struct,p_num,Mrk_Data,FP_data,ind_start,ind_end)
+% function [struct_stand_COP] = stand_COP(init_struct,p_num,Mrk_Data,FP_data,ind_start,ind_end)
 % 
 %  This function calculates the COP parameters while saving
 %  struct_stand_COP and plots all the graph and .mat file
@@ -7,6 +7,7 @@ function [struct_stand_COP] = stand_COP(init_struct,p_num,FP_data,ind_start,ind_
 %   INPUT:  init_struct - Initialize structure that has various information
 %                         (struct)
 %           p_num - Subject ID + Experiment Condition Number (string)
+%           Mrk_Data - Marker data (table)
 %           FP_data - Force plate data (table)
 %           ind_start - Start Index to slice data (index)
 %           ind_end - End Index to slice data (index)
@@ -175,8 +176,8 @@ for k = 1:min(numClust,length(cVec))
     title("COP Y 30:-5 sec before First Step")
     ylabel('COP Y [mm]'),xlabel(strcat('Time (',stand_range,'secs)'));
     hold off;
-
 end
+
 if init_struct.plot_save % Save if asked
     saveas(gcf,strcat(p_num,'_COP_clust_time.jpg'));
 end
@@ -254,8 +255,8 @@ if numClust>1
 
     for i=1:numClust
        clear temp_id;
-       trans_indx = [trans_indx (indx_clust{i})];
-       temp_id = ones(1,length(indx_clust{i}));
+       trans_indx = [trans_indx (clustMembsCell{i})];
+       temp_id = ones(1,length(clustMembsCell{i}));
        Clust_id = [Clust_id (temp_id.*i)];
 
     end
@@ -263,22 +264,113 @@ if numClust>1
     clust_trans = [trans_indx;Clust_id]';
     clust_trans_sort = sortrows(clust_trans);
 
-    trans_mat = diff(clust_trans_sort);
+    trans_mat = abs(diff(clust_trans_sort));
 
-    transitions = sum(trans_mat(:,1)>1 | trans_mat(:,2)>0);
+    transitions = sum(trans_mat(:,2)>0);
     
 else
     trans_indx = cell2mat(indx_clust);
     disp("    Only one cluster");
    transitions = 0;
+   
 end
 
 disp(['    Number of Transitions: ',num2str(transitions)]);
 
+%% %% MARKER DATA
+
+% Right Ankle (RANK)
+mrkr_RANKx = Mrk_Data.RANKX(:); % RANKX
+mrkr_RANKy = Mrk_Data.RANKY(:); % RANKY
+
+% Left Ankle (LANK)
+mrkr_LANKx = Mrk_Data.LANKX(:); % LANKX
+mrkr_LANKy = Mrk_Data.LANKY(:); % LANKY
+
+% Right Heel (RHEEL)
+mrkr_RHEELx = Mrk_Data.RHEELX(:); % RHEELX
+mrkr_RHEELy = Mrk_Data.RHEELY(:); % RHEELY
+
+% Left Heel (LHEEL)
+mrkr_LHEELx = Mrk_Data.LHEELX(:); % LHEELX
+mrkr_LHEELy = Mrk_Data.LHEELY(:); % LHEELY
+
+% Right Toe (RTOE)
+mrkr_RTOEx = Mrk_Data.RTOEX(:); % RTOEX
+mrkr_RTOEy = Mrk_Data.RTOEY(:); % RTOEY
+
+% Left Toe (LTOE)
+mrkr_LTOEx = Mrk_Data.LTOEX(:); % LTOEX
+mrkr_LTOEy = Mrk_Data.LTOEY(:); % LTOEY
+
+% Filter Data
+mrkr_RANKx_filter = filtfilt(init_struct.b_mrk,init_struct.a_mrk,mrkr_RANKx)/1000; % m
+mrkr_RANKy_filter = filtfilt(init_struct.b_mrk,init_struct.a_mrk,mrkr_RANKy)/1000; % m 
+
+mrkr_LANKx_filter = filtfilt(init_struct.b_mrk,init_struct.a_mrk,mrkr_LANKx)/1000; % m
+mrkr_LANKy_filter = filtfilt(init_struct.b_mrk,init_struct.a_mrk,mrkr_LANKy)/1000; % m 
+
+mrkr_RHEELx_filter = filtfilt(init_struct.b_mrk,init_struct.a_mrk,mrkr_RHEELx)/1000; % m
+mrkr_RHEELy_filter = filtfilt(init_struct.b_mrk,init_struct.a_mrk,mrkr_RHEELy)/1000; % m 
+
+mrkr_LHEELx_filter = filtfilt(init_struct.b_mrk,init_struct.a_mrk,mrkr_LHEELx)/1000; % m
+mrkr_LHEELy_filter = filtfilt(init_struct.b_mrk,init_struct.a_mrk,mrkr_LHEELy)/1000; % m 
+
+mrkr_RTOEx_filter = filtfilt(init_struct.b_mrk,init_struct.a_mrk,mrkr_RTOEx)/1000; % m
+mrkr_RTOEy_filter = filtfilt(init_struct.b_mrk,init_struct.a_mrk,mrkr_RTOEy)/1000; % m 
+
+mrkr_LTOEx_filter = filtfilt(init_struct.b_mrk,init_struct.a_mrk,mrkr_LTOEx)/1000; % m
+mrkr_LTOEy_filter = filtfilt(init_struct.b_mrk,init_struct.a_mrk,mrkr_LTOEy)/1000; % m 
+
+% Right Ankle (RANK)
+stand_RANKx = mrkr_RANKx_filter(ind_start:ind_end); % RANKX
+stand_RANKy = mrkr_RANKy_filter(ind_start:ind_end); % RANKY
+
+% Left Ankle (LANK)
+stand_LANKx = mrkr_LANKx_filter(ind_start:ind_end); % LANKX
+stand_LANKy = mrkr_LANKy_filter(ind_start:ind_end); % LANKY
+
+% Right HEEL (RHEEL)
+stand_RHEELx = mrkr_RHEELx_filter(ind_start:ind_end); % RHEELX
+stand_RHEELy = mrkr_RHEELy_filter(ind_start:ind_end); % RHEELY
+
+% Left HEEL (LHEEL)
+stand_LHEELx = mrkr_LHEELx_filter(ind_start:ind_end); % LHEELX
+stand_LHEELy = mrkr_LHEELy_filter(ind_start:ind_end); % LHEELY
+
+% Right Toe (RTOE)
+stand_RTOEx = mrkr_RTOEx_filter(ind_start:ind_end); % RTOEX
+stand_RTOEy = mrkr_RTOEy_filter(ind_start:ind_end); % RTOEY
+
+% Right Toe (LTOE)
+stand_LTOEx = mrkr_LTOEx_filter(ind_start:ind_end); % LTOEX
+stand_LTOEy = mrkr_LTOEy_filter(ind_start:ind_end); % LTOEY
+
+clear mrkr_* % clear unnecessary variables
+
+disp('    Marker Data Fecthed');
+
+%% STEP WIDTH
+
+stand_step_width = sqrt((stand_RANKy - stand_LANKy).^2); 
+
+disp('    Step Width Calculated');
+
+%% BASE OF SUPPORT
+
+xCordinates =[stand_RHEELx,stand_RANKx,stand_RTOEx,stand_LTOEx,stand_LANKx,stand_LHEELx,stand_RHEELx];
+yCordinates =[stand_RHEELy,stand_RANKx,stand_RTOEy,stand_LTOEy,stand_LANKy,stand_LHEELy,stand_RHEELy];
+
+stand_BoS = polyarea(xCordinates',yCordinates');
+
+stand_BoS = stand_BoS';
+
+disp('    Base of Support Calculated');
+
 %% COP PARAMETERS 
 
-clust_struct_stand_COP=struct;
-struct_stand_COP=struct;
+clust_struct_stand_COP = struct;
+struct_stand_COP = struct;
 
 if numClust>1 % More than one cluster
     for k=1:numClust
@@ -286,14 +378,14 @@ if numClust>1 % More than one cluster
             %% Cluster COP Parameters
             
             % Cluster info
-            clust_struct_stand_COP(k).indx = sort(indx_clust{k}); % index
+            clust_struct_stand_COP(k).indx = indx_clust{k}'; % index
             clust_struct_stand_COP(k).data_pnts = length(indx_clust{k}); % data points
             clust_struct_stand_COP(k).time = length(indx_clust{k})/init_struct.Fs; % time
             
             % COP data
             clust_struct_stand_COP(k).clust_COP_X = stand_COP_X(clust_struct_stand_COP(k).indx)/1000; % COP X of specific cluster in meters
             clust_struct_stand_COP(k).clust_COP_Y = stand_COP_Y(clust_struct_stand_COP(k).indx)/1000; % COP Y of specific cluster in meters
-            clust_struct_stand_COP(k).clust_COP_XY = (((clust_struct_stand_COP(k).clust_COP_X).^2)+((clust_struct_stand_COP(k).clust_COP_X).^2)).^0.5; % COP XY of specific cluster
+            clust_struct_stand_COP(k).clust_COP_XY = stand_COP_XY(clust_struct_stand_COP(k).indx)/1000; % COP XY of specific cluster
             clust_struct_stand_COP(k).clust_COP_XY_ratio = (clust_struct_stand_COP(k).clust_COP_X)./(clust_struct_stand_COP(k).clust_COP_Y); % COP XY ratio of specific cluster 
             
             % Mean
@@ -309,20 +401,29 @@ if numClust>1 % More than one cluster
             clust_struct_stand_COP(k).clust_std_COP_XY_ratio = std(clust_struct_stand_COP(k).clust_COP_XY_ratio);
             
             % Consequetive element velocity to reduce spikes
-            clear temp_diff temp_vel*;
+            clear temp_diff temp_vel* temp_indx;
             temp_diff = diff(clust_struct_stand_COP(k).indx);
             j=1;
             for i=1:length(temp_diff)
                 if temp_diff(i) == 1
                     temp_vel_COPx(j) = (stand_COP_X(clust_struct_stand_COP(k).indx(i+1))-stand_COP_X(clust_struct_stand_COP(k).indx(i)))/(init_struct.dt*1000); % m/sec
                     temp_vel_COPy(j) = (stand_COP_Y(clust_struct_stand_COP(k).indx(i+1))-stand_COP_Y(clust_struct_stand_COP(k).indx(i)))/(init_struct.dt*1000); % m/sec
+                    temp_indx(j) = clust_struct_stand_COP(k).indx(i+1);
                     j = j+1;
                 end    
             end
             
+            % Transpose to row vector
+            temp_indx = temp_indx';
+            temp_vel_COPx = temp_vel_COPx';
+            temp_vel_COPy = temp_vel_COPy';
+            
+            %Index
+            clust_struct_stand_COP(k).clust_vel_indx = temp_indx(2:end);
+            
             % Velocity
-            clust_struct_stand_COP(k).clust_vel_COP_X = temp_vel_COPx;
-            clust_struct_stand_COP(k).clust_vel_COP_Y = temp_vel_COPy;
+            clust_struct_stand_COP(k).clust_vel_COP_X = temp_vel_COPx(2:end);
+            clust_struct_stand_COP(k).clust_vel_COP_Y = temp_vel_COPy(2:end);
             
             % Velocity Mean
             clust_struct_stand_COP(k).clust_vel_mean_COP_X = mean(abs(temp_vel_COPx));
@@ -335,20 +436,31 @@ if numClust>1 % More than one cluster
             clust_struct_stand_COP(k).clust_vel_std_COP_Y = std(abs(temp_vel_COPy));
             clust_struct_stand_COP(k).clust_vel_std_COP_XY = std(abs(((temp_vel_COPy).^2+(temp_vel_COPy).^2).^0.5));
             clust_struct_stand_COP(k).clust_vel_std_COP_XY_ratio = std(abs((temp_vel_COPx)./(temp_vel_COPy)));           
-
+            
+            
+            % Step-width
+            clust_struct_stand_COP(k).clust_step_width = stand_step_width(clust_struct_stand_COP(k).indx);
+            clust_struct_stand_COP(k).clust_mean_step_width = mean(clust_struct_stand_COP(k).clust_step_width);
+            clust_struct_stand_COP(k).clust_std_step_width = std(clust_struct_stand_COP(k).clust_step_width);
+            
+            % Base of Support
+            clust_struct_stand_COP(k).clust_BoS = stand_BoS(clust_struct_stand_COP(k).indx);
+            clust_struct_stand_COP(k).clust_mean_BoS = mean(clust_struct_stand_COP(k).clust_BoS);
+            clust_struct_stand_COP(k).clust_std_BoS = std(clust_struct_stand_COP(k).clust_BoS);
+            
         end
     end
 % Only one cluster     
 else
     % Cluster info
-    clust_struct_stand_COP.indx = sort(trans_indx); % index
+    clust_struct_stand_COP.indx = trans_indx'; % index
     clust_struct_stand_COP.data_pnts = length(trans_indx); % data points
     clust_struct_stand_COP.time = length(trans_indx)/init_struct.Fs; % time
 
     % COP data
     clust_struct_stand_COP.clust_COP_X = stand_COP_X(clust_struct_stand_COP.indx)/1000; % COP X of specific cluster in meters
     clust_struct_stand_COP.clust_COP_Y = stand_COP_Y(clust_struct_stand_COP.indx)/1000; % COP Y of specific cluster in meters
-    clust_struct_stand_COP.clust_COP_XY = (((clust_struct_stand_COP.clust_COP_X).^2)+((clust_struct_stand_COP.clust_COP_X).^2)).^0.5; % COP XY of specific cluster
+    clust_struct_stand_COP.clust_COP_XY = stand_COP_XY(clust_struct_stand_COP.indx)/1000; % COP XY of specific cluster
     clust_struct_stand_COP.clust_COP_XY_ratio = (clust_struct_stand_COP.clust_COP_X)./(clust_struct_stand_COP.clust_COP_Y); % COP XY ratio of specific cluster 
 
     % Mean
@@ -364,20 +476,29 @@ else
     clust_struct_stand_COP.clust_std_COP_XY_ratio = std(clust_struct_stand_COP.clust_COP_XY_ratio);
 
     % Consequetive element velocity to reduce spikes
-    clear temp_diff temp_vel*;
+    clear temp_diff temp_vel* temp_indx;
     temp_diff = diff(clust_struct_stand_COP.indx);
     j=1;
     for i=1:length(temp_diff)
         if temp_diff(i) == 1
             temp_vel_COPx(j) = (stand_COP_X(clust_struct_stand_COP.indx(i+1))-stand_COP_X(clust_struct_stand_COP.indx(i)))/(init_struct.dt*1000); % m/sec
             temp_vel_COPy(j) = (stand_COP_Y(clust_struct_stand_COP.indx(i+1))-stand_COP_Y(clust_struct_stand_COP.indx(i)))/(init_struct.dt*1000); % m/sec
+            temp_indx(j) = clust_struct_stand_COP.indx(i+1);
             j = j+1;
         end    
     end
+    
+    % Transpose to row vector
+    temp_indx = temp_indx';
+    temp_vel_COPx = temp_vel_COPx';
+    temp_vel_COPy = temp_vel_COPy';
+
+    %Index
+    clust_struct_stand_COP.clust_vel_indx = temp_indx(2:end);
 
     % Velocity
-    clust_struct_stand_COP.clust_vel_COP_X = temp_vel_COPx;
-    clust_struct_stand_COP.clust_vel_COP_Y = temp_vel_COPy;
+    clust_struct_stand_COP.clust_vel_COP_X = temp_vel_COPx(2:end);
+    clust_struct_stand_COP.clust_vel_COP_Y = temp_vel_COPy(2:end);
 
     % Velocity Mean
     clust_struct_stand_COP.clust_vel_mean_COP_X = mean(abs(temp_vel_COPx));
@@ -391,19 +512,29 @@ else
     clust_struct_stand_COP.clust_vel_std_COP_XY = std(abs(((temp_vel_COPy).^2+(temp_vel_COPy).^2).^0.5));
     clust_struct_stand_COP.clust_vel_std_COP_XY_ratio = std(abs((temp_vel_COPx)./(temp_vel_COPy)));           
     
+    % Step-width
+    clust_struct_stand_COP.clust_step_width = stand_step_width(clust_struct_stand_COP.indx);
+    clust_struct_stand_COP.clust_mean_step_width = mean(clust_struct_stand_COP.clust_step_width);
+    clust_struct_stand_COP.clust_std_step_width = std(clust_struct_stand_COP.clust_step_width);
+
+    % Base of Support
+    clust_struct_stand_COP.clust_BoS = stand_BoS(clust_struct_stand_COP.indx);
+    clust_struct_stand_COP.clust_mean_BoS = mean(clust_struct_stand_COP.clust_BoS);
+    clust_struct_stand_COP.clust_std_BoS = std(clust_struct_stand_COP.clust_BoS);
+    
 end
 
 %% Full COP Parameters
 
-struct_stand_COP.trans_indx = sort(trans_indx);
+struct_stand_COP.trans_indx = trans_indx';
 struct_stand_COP.time = length(trans_indx)/init_struct.Fs; 
 struct_stand_COP.transitions = transitions;
 
 % COP data
-struct_stand_COP.full_COP_X = stand_COP_X(trans_indx)/1000; % COP X of specific cluster in meters
-struct_stand_COP.full_COP_Y = stand_COP_Y(trans_indx)/1000; % COP Y of specific cluster in meters
-struct_stand_COP.full_COP_XY = (((struct_stand_COP.full_COP_X).^2)+((struct_stand_COP.full_COP_X).^2)).^0.5; % COP XY of specific cluster
-struct_stand_COP.full_COP_XY_ratio = (struct_stand_COP.full_COP_X)./(struct_stand_COP.full_COP_Y); % COP XY ratio of specific cluster
+struct_stand_COP.full_COP_X = stand_COP_X(trans_indx)/1000; % COP X in meters
+struct_stand_COP.full_COP_Y = stand_COP_Y(trans_indx)/1000; % COP Y in meters
+struct_stand_COP.full_COP_XY = stand_COP_XY(trans_indx)/1000; % COP XY 
+struct_stand_COP.full_COP_XY_ratio = (struct_stand_COP.full_COP_X)./(struct_stand_COP.full_COP_Y); % COP XY ratio
 
 % Mean
 struct_stand_COP.full_mean_COP_X = mean(struct_stand_COP.full_COP_X);
@@ -418,20 +549,29 @@ struct_stand_COP.full_std_COP_XY = std(struct_stand_COP.full_COP_XY);
 struct_stand_COP.full_std_COP_XY_ratio = std(struct_stand_COP.full_COP_XY_ratio);
 
 % Consequetive element velocity to reduce spikes
-clear temp_diff temp_vel*;
+clear temp_diff temp_vel* temp_indx;
 temp_diff = diff(trans_indx);
 j=1;
 for i=1:length(temp_diff)
     if temp_diff(i) == 1
         temp_vel_COPx(j) = (stand_COP_X(trans_indx(i+1))-stand_COP_X(trans_indx(i)))/(init_struct.dt*1000); % m
         temp_vel_COPy(j) = (stand_COP_Y(trans_indx(i+1))-stand_COP_Y(trans_indx(i)))/(init_struct.dt*1000); % m
+        temp_indx(j) = trans_indx(i+1);
         j = j+1;
     end    
 end
 
+% Transpose to row vector
+temp_indx = temp_indx';
+temp_vel_COPx = temp_vel_COPx';
+temp_vel_COPy = temp_vel_COPy';
+
+%Index
+struct_stand_COP.full_vel_indx = temp_indx(2:end);
+
 % Velocity
-struct_stand_COP.full_vel_COP_X = temp_vel_COPx;
-struct_stand_COP.full_vel_COP_Y = temp_vel_COPy;
+struct_stand_COP.full_vel_COP_X = temp_vel_COPx(2:end);
+struct_stand_COP.full_vel_COP_Y = temp_vel_COPy(2:end);
 
 % Velocity Mean 
 struct_stand_COP.full_vel_mean_COP_X = mean(abs(temp_vel_COPx));
@@ -444,6 +584,16 @@ struct_stand_COP.full_vel_std_COP_X = std(abs(temp_vel_COPx));
 struct_stand_COP.full_vel_std_COP_Y = std(abs(temp_vel_COPy));
 struct_stand_COP.full_vel_std_COP_XY = std(abs(((temp_vel_COPy).^2+(temp_vel_COPy).^2).^0.5));
 struct_stand_COP.full_vel_std_COP_XY_ratio = std(abs((temp_vel_COPx)./(temp_vel_COPy)));           
+
+% Step-width
+struct_stand_COP.full_step_width = stand_step_width(trans_indx);
+struct_stand_COP.full_mean_step_width = mean(struct_stand_COP.full_step_width);
+struct_stand_COP.full_std_step_width = std(struct_stand_COP.full_step_width);
+
+% Base of Support
+struct_stand_COP.full_BoS = stand_BoS(trans_indx);
+struct_stand_COP.full_mean_BoS = mean(struct_stand_COP.full_BoS);
+struct_stand_COP.full_std_BoS = std(struct_stand_COP.full_BoS);
 
 %% RELATIVE PARAMETERS
 
@@ -474,13 +624,183 @@ struct_stand_COP.clust_rel_vel_std_COP_Y = (sum([clust_struct_stand_COP.clust_ve
 struct_stand_COP.clust_rel_vel_std_COP_XY = (sum([clust_struct_stand_COP.clust_vel_std_COP_XY].*[clust_struct_stand_COP.data_pnts]))/sum([clust_struct_stand_COP.data_pnts]);
 struct_stand_COP.clust_rel_vel_std_COP_XY_ratio = (sum([clust_struct_stand_COP.clust_vel_std_COP_XY_ratio].*[clust_struct_stand_COP.data_pnts]))/sum([clust_struct_stand_COP.data_pnts]);   
 
+% Step-width
+struct_stand_COP.clust_rel_mean_step_width = (sum([clust_struct_stand_COP.clust_mean_step_width].*[clust_struct_stand_COP.data_pnts]))/sum([clust_struct_stand_COP.data_pnts]);
+struct_stand_COP.clust_rel_std_step_width = (sum([clust_struct_stand_COP.clust_std_step_width].*[clust_struct_stand_COP.data_pnts]))/sum([clust_struct_stand_COP.data_pnts]);
+
+% Base of Support
+struct_stand_COP.clust_rel_mean_BoS = (sum([clust_struct_stand_COP.clust_mean_BoS].*[clust_struct_stand_COP.data_pnts]))/sum([clust_struct_stand_COP.data_pnts]);
+struct_stand_COP.clust_rel_std_BoS = (sum([clust_struct_stand_COP.clust_std_BoS].*[clust_struct_stand_COP.data_pnts]))/sum([clust_struct_stand_COP.data_pnts]);;
+
 disp("    Parameters Calculated");
+
+%% CONTINOUS PARAMETERS
+
+% For clusters
+clust_continous_COP=struct;
+
+for i=1:length(clust_struct_stand_COP)
+   clear COP*
+   
+   COPX = [clust_struct_stand_COP(i).clust_COP_X,clust_struct_stand_COP(i).indx]; % create matrix of value and index
+   COPX = sortrows(COPX,2); % sort according to values
+   COP_X = rollstat(COPX,360,360); % calculate rolling window stats (120Hz * 3sec = 360 points)
+   clust_continous_COP(i).COP_X = [COP_X.stats]; % save to struct
+   
+   COPY = [clust_struct_stand_COP(i).clust_COP_Y,clust_struct_stand_COP(i).indx];
+   COPY = sortrows(COPY,2);
+   COP_Y = rollstat(COPY,360,360);
+   clust_continous_COP(i).COP_Y = [COP_Y.stats];
+   
+   COPXY = [clust_struct_stand_COP(i).clust_COP_XY,clust_struct_stand_COP(i).indx];
+   COPXY = sortrows(COPXY,2);
+   COP_XY = rollstat(COPXY,360,360);
+   clust_continous_COP(i).COP_XY = [COP_XY.stats];
+   
+   COPXY_ratio = [clust_struct_stand_COP(i).clust_COP_XY,clust_struct_stand_COP(i).indx];
+   COPXY_ratio = sortrows(COPXY_ratio,2);
+   COP_XY_ratio = rollstat(COPXY_ratio,360,360);
+   clust_continous_COP(i).COP_XY_ratio = [COP_XY_ratio.stats];
+   
+   COPX_vel = [clust_struct_stand_COP(i).clust_vel_COP_X,clust_struct_stand_COP(i).clust_vel_indx];
+   COPX_vel = sortrows(COPX_vel,2);
+   COP_X_vel = rollstat(COPX_vel,360,360);
+   clust_continous_COP(i).COP_X_vel = [COP_X_vel.stats];
+   
+   COPY_vel = [clust_struct_stand_COP(i).clust_vel_COP_Y,clust_struct_stand_COP(i).clust_vel_indx];
+   COPY_vel = sortrows(COPY_vel,2);
+   COP_Y_vel = rollstat(COPY_vel,360,360);
+   clust_continous_COP(i).COP_Y_vel = [COP_Y_vel.stats];
+   
+   stp_wdt = [clust_struct_stand_COP(i).clust_step_width,clust_struct_stand_COP(i).indx];
+   stp_wdt = sortrows(stp_wdt,2);
+   step_width = rollstat(stp_wdt,360,360);
+   clust_continous_COP(i).step_width = [step_width.stats];
+   
+   B_o_S = [clust_struct_stand_COP(i).clust_BoS,clust_struct_stand_COP(i).indx];
+   B_o_S = sortrows(B_o_S,2);
+   BoS = rollstat(B_o_S,360,360);
+   clust_continous_COP(i).BoS = [BoS.stats];
+  
+end    
+
+% For full
+full_continous_COP = struct;
+
+clear COP*
+
+COPX = [struct_stand_COP.full_COP_X,struct_stand_COP.trans_indx]; % create matrix of value and index
+COPX = sortrows(COPX,2); % sort according to values
+COP_X = rollstat(COPX,360,360); % calculate rolling window stats
+full_continous_COP.COP_X = [COP_X.stats]; % save to struct
+
+COPY = [struct_stand_COP.full_COP_Y,struct_stand_COP.trans_indx];
+COPY = sortrows(COPY,2);
+COP_Y = rollstat(COPY,360,360);
+full_continous_COP.COP_Y = [COP_Y.stats];
+
+COPX_vel = [struct_stand_COP.full_vel_COP_X,struct_stand_COP.full_vel_indx];
+COPX_vel = sortrows(COPX_vel,2);
+COP_X_vel = rollstat(COPX_vel,360,360);
+full_continous_COP.COP_X_vel = [COP_X_vel.stats];
+
+COPY_vel = [struct_stand_COP.full_vel_COP_Y,struct_stand_COP.full_vel_indx];
+COPY_vel = sortrows(COPY_vel,2);
+COP_Y_vel = rollstat(COPY_vel,360,360);
+full_continous_COP.COP_Y_vel = [COP_Y_vel.stats];   
+
+stp_wdt = [struct_stand_COP.full_step_width,struct_stand_COP.trans_indx];
+stp_wdt = sortrows(stp_wdt,2);
+step_width = rollstat(stp_wdt,360,360);
+full_continous_COP.step_width = [step_width.stats];
+   
+B_o_S = [struct_stand_COP.full_BoS,struct_stand_COP.trans_indx];
+B_o_S = sortrows(B_o_S,2);
+BoS = rollstat(B_o_S,360,360);
+full_continous_COP.BoS = [BoS.stats];
+
+disp("    Continous Parameters Calculated");
 
 %% MAT FILE
 
 save(strcat(p_num,'_clust_stand_COP.mat'),'clust_struct_stand_COP');
 save(strcat(p_num,'_stand_COP.mat'),'struct_stand_COP');
 
-disp("    .MAT File Saved");
+save(strcat(p_num,'_clust_continous_COP.mat'),'clust_continous_COP');
+save(strcat(p_num,'_full_continous_COP.mat'),'full_continous_COP');
+
+disp("    COP .MAT File Saved");
+
+%% PLOT CONTINOUS PARAMETERS
+
+% cluster continous plots
+struct_var_name = fieldnames(clust_continous_COP);
+figure;
+for i=1:length(struct_var_name)
+    for k=1:length(clust_continous_COP)
+    
+        clust_num = strcat("Cluster ",num2str(k));
+        len_interval = length([clust_continous_COP(k).(struct_var_name{i}).mean]);
+        
+        subplot(2,1,1);
+        hold on;
+%         bar(linspace(1,len_interval,len_interval),[clust_continous_COP(k).(struct_var_name{i}).mean],'grouped',cVec(k),'DisplayName',clust_num);
+        plot([clust_continous_COP(k).(struct_var_name{i}).mean],cVec(k),'DisplayName',clust_num);
+        title(strcat(struct_var_name(i),' Mean'),'Interpreter','none');
+        ylabel(strcat('3 sec',struct_var_name{i},' mean'),'Interpreter','none'),xlabel('Intervals');
+        legend('-DynamicLegend');
+        legend('show');
+        hold off;
+
+        subplot(2,1,2);
+        hold on;
+%         bar(linspace(1,len_interval,len_interval),[clust_continous_COP(k).(struct_var_name{i}).sd],'grouped',cVec(k),'DisplayName',clust_num);
+        plot([clust_continous_COP(k).(struct_var_name{i}).sd],cVec(k),'DisplayName',clust_num);
+        title(strcat(struct_var_name(i),' Std'),'Interpreter','none');
+        ylabel(strcat('3 sec',struct_var_name(i),' std'),'Interpreter','none'),xlabel('Intervals');
+        legend('-DynamicLegend');
+        legend('show');
+        hold off;
+        
+    end
+    if init_struct.plot_save % Save if asked
+        saveas(gcf,strcat(p_num,'_clust_contionus_',struct_var_name{i},'.jpg'));
+    end
+    if ~init_struct.plot_view % Keep graph if asked
+        close;
+    end
+    
+end
+
+% full continous plots
+struct_var_name = fieldnames(full_continous_COP);
+figure;
+for i=1:length(struct_var_name)
+    
+    subplot(2,1,1);
+    hold on;
+    bar([full_continous_COP.(struct_var_name{i}).mean]);
+    title(strcat(struct_var_name(i),' Mean'),'Interpreter','none');
+    ylabel(strcat('3 sec',struct_var_name{i},' mean'),'Interpreter','none'),xlabel('Intervals');
+    hold off;
+
+    subplot(2,1,2);
+    hold on;
+    bar([full_continous_COP.(struct_var_name{i}).sd]);
+    title(strcat(struct_var_name(i),' Std'),'Interpreter','none');
+    ylabel(strcat('3 sec',struct_var_name(i),' std'),'Interpreter','none'),xlabel('Intervals');
+    hold off;
+    
+    if init_struct.plot_save % Save if asked
+        saveas(gcf,strcat(p_num,'_full_contionus_',struct_var_name{i},'.jpg'));
+    end
+    if ~init_struct.plot_view % Keep graph if asked
+        close;
+    end
+    
+end
+
+disp("    Continous Plots Saved");
+
 
 end

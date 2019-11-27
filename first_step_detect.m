@@ -29,7 +29,6 @@ fp_time = FP_data.TIME(:); % Forceplate Data Time
 
 %Data to be used for detection
 Force_Z = FP_data.Force_Z(f30_sec:end); % Force Z
-Force_Z = filtfilt(init_struct.b_fp,init_struct.a_fp,Force_Z)/1; 
 RHEEL_X = Mrk_Data.RHEELX(f30_sec:end); % RHEEL X
 LHEEL_X = Mrk_Data.LHEELX(f30_sec:end); % LHEEL X
 
@@ -72,7 +71,6 @@ ind_start = f30_sec; % data after first 30 seconds
 ind_end=indx_frst_stp_end; %5 sec before first step initiation
 
 %% PLOT FIRST STEP
-
 
 figure;
 subplot(3,1,1);
