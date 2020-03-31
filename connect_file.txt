@@ -1,0 +1,189 @@
+<?xml version="1.0"?>
+<QTM_Label_List_Ver_1.00>
+    <Trajectories>
+        <Trajectory>
+            <Name>TPHD</Name>
+            <Color R="0" G="255" B="0"/>
+        </Trajectory>
+        <Trajectory>
+            <Name>C7</Name>
+            <Color R="0" G="255" B="0"/>
+        </Trajectory>
+        <Trajectory>
+            <Name>IP</Name>
+            <Color R="0" G="255" B="0"/>
+        </Trajectory>
+        <Trajectory>
+            <Name>RSHO</Name>
+            <Color R="255" G="255" B="0"/>
+        </Trajectory>
+        <Trajectory>
+            <Name>LSHO</Name>
+            <Color R="0" G="255" B="255"/>
+        </Trajectory>
+        <Trajectory>
+            <Name>RELB</Name>
+            <Color R="255" G="255" B="0"/>
+        </Trajectory>
+        <Trajectory>
+            <Name>LELB</Name>
+            <Color R="0" G="255" B="255"/>
+        </Trajectory>
+        <Trajectory>
+            <Name>RWRST</Name>
+            <Color R="255" G="255" B="0"/>
+        </Trajectory>
+        <Trajectory>
+            <Name>LWRST</Name>
+            <Color R="0" G="255" B="255"/>
+        </Trajectory>
+        <Trajectory>
+            <Name>RHIP</Name>
+            <Color R="0" G="255" B="0"/>
+        </Trajectory>
+        <Trajectory>
+            <Name>LHIP</Name>
+            <Color R="0" G="255" B="0"/>
+        </Trajectory>
+        <Trajectory>
+            <Name>RKNE</Name>
+            <Color R="255" G="255" B="0"/>
+        </Trajectory>
+        <Trajectory>
+            <Name>LKNE</Name>
+            <Color R="0" G="255" B="255"/>
+        </Trajectory>
+        <Trajectory>
+            <Name>RANK</Name>
+            <Color R="255" G="255" B="0"/>
+        </Trajectory>
+        <Trajectory>
+            <Name>LANK</Name>
+            <Color R="0" G="255" B="255"/>
+        </Trajectory>
+        <Trajectory>
+            <Name>RTOE</Name>
+            <Color R="255" G="255" B="0"/>
+        </Trajectory>
+        <Trajectory>
+            <Name>LTOE</Name>
+            <Color R="0" G="255" B="255"/>
+        </Trajectory>
+        <Trajectory>
+            <Name>RHEEL</Name>
+            <Color R="255" G="255" B="0"/>
+        </Trajectory>
+        <Trajectory>
+            <Name>LHEEL</Name>
+            <Color R="0" G="255" B="255"/>
+        </Trajectory>
+        <Trajectory>
+            <Name>LHD</Name>
+            <Color R="255" G="255" B="0"/>
+        </Trajectory>
+        <Trajectory>
+            <Name>RHD</Name>
+            <Color R="0" G="255" B="255"/>
+        </Trajectory>
+    </Trajectories>
+    <Bones>
+        <Color R="246" G="249" B="124"/>
+        <Thickness>20.000000</Thickness>
+        <Bone>
+            <Index Low="1" High="2"/>
+            <Color R="255" G="0" B="0"/>
+        </Bone>
+        <Bone>
+            <Index Low="1" High="20"/>
+            <Color R="255" G="0" B="0"/>
+        </Bone>
+        <Bone>
+            <Index Low="1" High="21"/>
+            <Color R="255" G="0" B="0"/>
+        </Bone>
+        <Bone>
+            <Index Low="2" High="3"/>
+            <Color R="255" G="0" B="0"/>
+        </Bone>
+        <Bone>
+            <Index Low="2" High="4"/>
+            <Color R="255" G="255" B="0"/>
+        </Bone>
+        <Bone>
+            <Index Low="2" High="5"/>
+            <Color R="0" G="255" B="255"/>
+        </Bone>
+        <Bone>
+            <Index Low="3" High="10"/>
+            <Color R="255" G="0" B="0"/>
+        </Bone>
+        <Bone>
+            <Index Low="3" High="11"/>
+            <Color R="255" G="0" B="0"/>
+        </Bone>
+        <Bone>
+            <Index Low="4" High="6"/>
+            <Color R="255" G="255" B="0"/>
+        </Bone>
+        <Bone>
+            <Index Low="5" High="7"/>
+            <Color R="0" G="255" B="255"/>
+        </Bone>
+        <Bone>
+            <Index Low="6" High="8"/>
+            <Color R="255" G="255" B="0"/>
+        </Bone>
+        <Bone>
+            <Index Low="7" High="9"/>
+            <Color R="0" G="255" B="255"/>
+        </Bone>
+        <Bone>
+            <Index Low="10" High="11"/>
+            <Color R="255" G="0" B="0"/>
+        </Bone>
+        <Bone>
+            <Index Low="10" High="12"/>
+            <Color R="255" G="255" B="0"/>
+        </Bone>
+        <Bone>
+            <Index Low="11" High="13"/>
+            <Color R="0" G="255" B="255"/>
+        </Bone>
+        <Bone>
+            <Index Low="12" High="14"/>
+            <Color R="255" G="255" B="0"/>
+        </Bone>
+        <Bone>
+            <Index Low="13" High="15"/>
+            <Color R="0" G="255" B="255"/>
+        </Bone>
+        <Bone>
+            <Index Low="14" High="16"/>
+            <Color R="255" G="255" B="0"/>
+        </Bone>
+        <Bone>
+            <Index Low="14" High="18"/>
+            <Color R="255" G="255" B="0"/>
+        </Bone>
+        <Bone>
+            <Index Low="15" High="17"/>
+            <Color R="0" G="255" B="255"/>
+        </Bone>
+        <Bone>
+            <Index Low="15" High="19"/>
+            <Color R="0" G="255" B="255"/>
+        </Bone>
+        <Bone>
+            <Index Low="16" High="18"/>
+            <Color R="255" G="255" B="0"/>
+        </Bone>
+        <Bone>
+            <Index Low="17" High="19"/>
+            <Color R="0" G="255" B="255"/>
+        </Bone>
+        <Bone>
+            <Index Low="20" High="21"/>
+            <Color R="255" G="0" B="0"/>
+        </Bone>
+    </Bones>
+</QTM_Label_List_Ver_1.00>

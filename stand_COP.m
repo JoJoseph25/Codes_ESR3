@@ -16,6 +16,14 @@ function [struct_stand_COP] = stand_COP(init_struct,p_num,Mrk_Data,FP_data,ind_s
 %             
 % written by Joel V Joseph (josephjo@post.bgu.ac.il)
 
+%% CHANGE FOLDER
+
+if ~exist('Stand COP', 'dir') % Check if folder exist
+    mkdir('Stand COP'); % make new folder
+end
+
+cd('Stand COP'); % Change directory to new folder
+
 %% EXCEPTIONS
 
 exceptions={'1008_dy8','1010_dy6','1018_dy7','1018_dy8'}; % List of exceptions that need different 
@@ -113,21 +121,23 @@ numClust = length(clustMembsCell); % number of clusters
 
 % Clean clusters and remove transitions
 for k=1:numClust
-    indx_temp=clustMembsCell{k}; % current cluster indexes
-    dist_temp=clust_mat(:,clustMembsCell{k}); % current cluster data points (COP X-Y)
-    dist_temp=transpose(dist_temp); % transpose the current cluster data points
-    
-    % create distance vector to be used to clean data or remove transitions
-    dist_mat=pdist(dist_temp,'mahalanobis'); % Malabonis distance vector  
-    clear dist_temp % remove temp data point matrix as it is not needed
-    dist_mat=squareform(dist_mat); % symmetric distance matrix
+    if length(clustMembsCell{k})>60
+        indx_temp=clustMembsCell{k}; % current cluster indexes
+        dist_temp=clust_mat(:,clustMembsCell{k}); % current cluster data points (COP X-Y)
+        dist_temp=transpose(dist_temp); % transpose the current cluster data points
 
-    Eps=0.72; % min distance 
-    MinPts=240; % min data points need to call as cluster (2 sec=120*2 points)
-    
-    % Function of Density based clustering to remove the transitions 
-    Clust = DBSCAN(dist_mat,Eps,MinPts);
-    indx_clust{k,1}=indx_temp(Clust~=0); % indexes of clean clusters
+        % create distance vector to be used to clean data or remove transitions
+        dist_mat=pdist(dist_temp,'mahalanobis'); % Malabonis distance vector  
+        clear dist_temp % remove temp data point matrix as it is not needed
+        dist_mat=squareform(dist_mat); % symmetric distance matrix
+
+        Eps=0.72; % min distance 
+        MinPts=240; % min data points need to call as cluster (2 sec=120*2 points)
+
+        % Function of Density based clustering to remove the transitions 
+        Clust = DBSCAN(dist_mat,Eps,MinPts);
+        indx_clust{k,1}=indx_temp(Clust~=0); % indexes of clean clusters
+    end
 end   
 
 disp('    Clustering');
@@ -193,9 +203,11 @@ disp('    Cluster Plots');
 figure;
 hold on
 cVec = 'bgrcmykbgrcmykbgrcmykbgrcmyk';%, cVec = [cVec cVec];
+assignin('base','numClust',numClust);
 for k = 1:min(numClust,length(cVec))
     cop_num=strcat("COP",num2str(k));
     cent_num=strcat("Center",num2str(k));
+    assignin('base','indx_clust',indx_clust);
     if length(indx_clust{k})>1
         myMembers = indx_clust{k};
         temp_clust=clust_mat(:,myMembers);
@@ -608,7 +620,7 @@ struct_stand_COP.clust_rel_mean_COP_XY_ratio = (sum([clust_struct_stand_COP.clus
 
 % Relative Standard-deviation
 struct_stand_COP.clust_rel_std_COP_X = (sum([clust_struct_stand_COP.clust_std_COP_X].*[clust_struct_stand_COP.data_pnts]))/sum([clust_struct_stand_COP.data_pnts]);
-struct_stand_COP.clust_rel_stsd_COP_Y = (sum([clust_struct_stand_COP.clust_std_COP_Y].*[clust_struct_stand_COP.data_pnts]))/sum([clust_struct_stand_COP.data_pnts]);
+struct_stand_COP.clust_rel_std_COP_Y = (sum([clust_struct_stand_COP.clust_std_COP_Y].*[clust_struct_stand_COP.data_pnts]))/sum([clust_struct_stand_COP.data_pnts]);
 struct_stand_COP.clust_rel_std_COP_XY = (sum([clust_struct_stand_COP.clust_std_COP_XY].*[clust_struct_stand_COP.data_pnts]))/sum([clust_struct_stand_COP.data_pnts]);
 struct_stand_COP.clust_rel_std_COP_XY_ratio = (sum([clust_struct_stand_COP.clust_std_COP_XY_ratio].*[clust_struct_stand_COP.data_pnts]))/sum([clust_struct_stand_COP.data_pnts]);
 
@@ -642,44 +654,48 @@ clust_continous_COP=struct;
 for i=1:length(clust_struct_stand_COP)
    clear COP*
    
+   if length(clust_struct_stand_COP(i).indx)<600
+       continue
+   end
+   size(clust_struct_stand_COP(i).indx)
    COPX = [clust_struct_stand_COP(i).clust_COP_X,clust_struct_stand_COP(i).indx]; % create matrix of value and index
    COPX = sortrows(COPX,2); % sort according to values
-   COP_X = rollstat(COPX,360,360); % calculate rolling window stats (120Hz * 3sec = 360 points)
+   COP_X = rollstat(COPX,600,600); % calculate rolling window stats (120Hz *5 sec = 600 points)
    clust_continous_COP(i).COP_X = [COP_X.stats]; % save to struct
    
    COPY = [clust_struct_stand_COP(i).clust_COP_Y,clust_struct_stand_COP(i).indx];
    COPY = sortrows(COPY,2);
-   COP_Y = rollstat(COPY,360,360);
+   COP_Y = rollstat(COPY,600,600);
    clust_continous_COP(i).COP_Y = [COP_Y.stats];
    
    COPXY = [clust_struct_stand_COP(i).clust_COP_XY,clust_struct_stand_COP(i).indx];
    COPXY = sortrows(COPXY,2);
-   COP_XY = rollstat(COPXY,360,360);
+   COP_XY = rollstat(COPXY,600,600);
    clust_continous_COP(i).COP_XY = [COP_XY.stats];
    
    COPXY_ratio = [clust_struct_stand_COP(i).clust_COP_XY,clust_struct_stand_COP(i).indx];
    COPXY_ratio = sortrows(COPXY_ratio,2);
-   COP_XY_ratio = rollstat(COPXY_ratio,360,360);
+   COP_XY_ratio = rollstat(COPXY_ratio,600,600);
    clust_continous_COP(i).COP_XY_ratio = [COP_XY_ratio.stats];
    
    COPX_vel = [clust_struct_stand_COP(i).clust_vel_COP_X,clust_struct_stand_COP(i).clust_vel_indx];
    COPX_vel = sortrows(COPX_vel,2);
-   COP_X_vel = rollstat(COPX_vel,360,360);
+   COP_X_vel = rollstat(COPX_vel,600,600);
    clust_continous_COP(i).COP_X_vel = [COP_X_vel.stats];
    
    COPY_vel = [clust_struct_stand_COP(i).clust_vel_COP_Y,clust_struct_stand_COP(i).clust_vel_indx];
    COPY_vel = sortrows(COPY_vel,2);
-   COP_Y_vel = rollstat(COPY_vel,360,360);
+   COP_Y_vel = rollstat(COPY_vel,600,600);
    clust_continous_COP(i).COP_Y_vel = [COP_Y_vel.stats];
    
    stp_wdt = [clust_struct_stand_COP(i).clust_step_width,clust_struct_stand_COP(i).indx];
    stp_wdt = sortrows(stp_wdt,2);
-   step_width = rollstat(stp_wdt,360,360);
+   step_width = rollstat(stp_wdt,600,600);
    clust_continous_COP(i).step_width = [step_width.stats];
    
    B_o_S = [clust_struct_stand_COP(i).clust_BoS,clust_struct_stand_COP(i).indx];
    B_o_S = sortrows(B_o_S,2);
-   BoS = rollstat(B_o_S,360,360);
+   BoS = rollstat(B_o_S,600,600);
    clust_continous_COP(i).BoS = [BoS.stats];
   
 end    
@@ -691,45 +707,35 @@ clear COP*
 
 COPX = [struct_stand_COP.full_COP_X,struct_stand_COP.trans_indx]; % create matrix of value and index
 COPX = sortrows(COPX,2); % sort according to values
-COP_X = rollstat(COPX,360,360); % calculate rolling window stats
+COP_X = rollstat(COPX,600,600); % calculate rolling window stats (120Hz *5 sec = 600 points)
 full_continous_COP.COP_X = [COP_X.stats]; % save to struct
 
 COPY = [struct_stand_COP.full_COP_Y,struct_stand_COP.trans_indx];
 COPY = sortrows(COPY,2);
-COP_Y = rollstat(COPY,360,360);
+COP_Y = rollstat(COPY,600,600);
 full_continous_COP.COP_Y = [COP_Y.stats];
 
 COPX_vel = [struct_stand_COP.full_vel_COP_X,struct_stand_COP.full_vel_indx];
 COPX_vel = sortrows(COPX_vel,2);
-COP_X_vel = rollstat(COPX_vel,360,360);
+COP_X_vel = rollstat(COPX_vel,600,600);
 full_continous_COP.COP_X_vel = [COP_X_vel.stats];
 
 COPY_vel = [struct_stand_COP.full_vel_COP_Y,struct_stand_COP.full_vel_indx];
 COPY_vel = sortrows(COPY_vel,2);
-COP_Y_vel = rollstat(COPY_vel,360,360);
+COP_Y_vel = rollstat(COPY_vel,600,600);
 full_continous_COP.COP_Y_vel = [COP_Y_vel.stats];   
 
 stp_wdt = [struct_stand_COP.full_step_width,struct_stand_COP.trans_indx];
 stp_wdt = sortrows(stp_wdt,2);
-step_width = rollstat(stp_wdt,360,360);
+step_width = rollstat(stp_wdt,600,600);
 full_continous_COP.step_width = [step_width.stats];
    
 B_o_S = [struct_stand_COP.full_BoS,struct_stand_COP.trans_indx];
 B_o_S = sortrows(B_o_S,2);
-BoS = rollstat(B_o_S,360,360);
+BoS = rollstat(B_o_S,600,600);
 full_continous_COP.BoS = [BoS.stats];
 
 disp("    Continous Parameters Calculated");
-
-%% MAT FILE
-
-save(strcat(p_num,'_clust_stand_COP.mat'),'clust_struct_stand_COP');
-save(strcat(p_num,'_stand_COP.mat'),'struct_stand_COP');
-
-save(strcat(p_num,'_clust_continous_COP.mat'),'clust_continous_COP');
-save(strcat(p_num,'_full_continous_COP.mat'),'full_continous_COP');
-
-disp("    COP .MAT File Saved");
 
 %% PLOT CONTINOUS PARAMETERS
 
@@ -740,14 +746,13 @@ for i=1:length(struct_var_name)
     for k=1:length(clust_continous_COP)
     
         clust_num = strcat("Cluster ",num2str(k));
-        len_interval = length([clust_continous_COP(k).(struct_var_name{i}).mean]);
         
         subplot(2,1,1);
         hold on;
 %         bar(linspace(1,len_interval,len_interval),[clust_continous_COP(k).(struct_var_name{i}).mean],'grouped',cVec(k),'DisplayName',clust_num);
         plot([clust_continous_COP(k).(struct_var_name{i}).mean],cVec(k),'DisplayName',clust_num);
         title(strcat(struct_var_name(i),' Mean'),'Interpreter','none');
-        ylabel(strcat('3 sec',struct_var_name{i},' mean'),'Interpreter','none'),xlabel('Intervals');
+        ylabel(strcat('5 sec',struct_var_name{i},' mean'),'Interpreter','none'),xlabel('Intervals');
         legend('-DynamicLegend');
         legend('show');
         hold off;
@@ -757,7 +762,7 @@ for i=1:length(struct_var_name)
 %         bar(linspace(1,len_interval,len_interval),[clust_continous_COP(k).(struct_var_name{i}).sd],'grouped',cVec(k),'DisplayName',clust_num);
         plot([clust_continous_COP(k).(struct_var_name{i}).sd],cVec(k),'DisplayName',clust_num);
         title(strcat(struct_var_name(i),' Std'),'Interpreter','none');
-        ylabel(strcat('3 sec',struct_var_name(i),' std'),'Interpreter','none'),xlabel('Intervals');
+        ylabel(strcat('5 sec',struct_var_name(i),' std'),'Interpreter','none'),xlabel('Intervals');
         legend('-DynamicLegend');
         legend('show');
         hold off;
@@ -781,14 +786,14 @@ for i=1:length(struct_var_name)
     hold on;
     bar([full_continous_COP.(struct_var_name{i}).mean]);
     title(strcat(struct_var_name(i),' Mean'),'Interpreter','none');
-    ylabel(strcat('3 sec',struct_var_name{i},' mean'),'Interpreter','none'),xlabel('Intervals');
+    ylabel(strcat('5 sec',struct_var_name{i},' mean'),'Interpreter','none'),xlabel('Intervals');
     hold off;
 
     subplot(2,1,2);
     hold on;
     bar([full_continous_COP.(struct_var_name{i}).sd]);
     title(strcat(struct_var_name(i),' Std'),'Interpreter','none');
-    ylabel(strcat('3 sec',struct_var_name(i),' std'),'Interpreter','none'),xlabel('Intervals');
+    ylabel(strcat('5 sec',struct_var_name(i),' std'),'Interpreter','none'),xlabel('Intervals');
     hold off;
     
     if init_struct.plot_save % Save if asked
@@ -802,5 +807,20 @@ end
 
 disp("    Continous Plots Saved");
 
+%% MAT FILE
+if init_struct.mat_save
+    
+    save(strcat(p_num,'_clust_stand_COP.mat'),'clust_struct_stand_COP');
+    save(strcat(p_num,'_stand_COP.mat'),'struct_stand_COP');
+
+    save(strcat(p_num,'_clust_continous_COP.mat'),'clust_continous_COP');
+    save(strcat(p_num,'_full_continous_COP.mat'),'full_continous_COP');
+
+    disp("    COP .MAT File Saved");
+    
+end
+%% CHANGE BACK TO DIRECTORY
+
+cd('..')
 
 end

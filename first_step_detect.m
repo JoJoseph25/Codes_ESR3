@@ -16,6 +16,10 @@ function [ind_start,ind_end] = first_step_detect(init_struct,p_num,Mrk_Data,FP_d
 %             
 % written by Joel V Joseph (josephjo@post.bgu.ac.il)
 
+%% EXCEPTIONS
+
+exceptions ={'1020_dy5';};
+
 %% TIME
 f10_sec = 10*20;
 
@@ -32,8 +36,12 @@ Force_Z = FP_data.Force_Z(f30_sec:end); % Force Z
 RHEEL_X = Mrk_Data.RHEELX(f30_sec:end); % RHEEL X
 LHEEL_X = Mrk_Data.LHEELX(f30_sec:end); % LHEEL X
 
-detect_criteria = -5;
-    
+if ismember(p_num,exceptions)
+    detect_criteria = 465;
+else
+    detect_criteria = -5;
+end
+
 % Value of Force Z around zero (first value Force_Z>+/-5 + RHEEL\LHEEL>50mm)
 indx_frst_stp = find((Force_Z > detect_criteria & (RHEEL_X > 50 | LHEEL_X > 50)),1,'first'); % Index First Step of Force Plate
 

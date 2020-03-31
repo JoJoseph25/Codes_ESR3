@@ -15,10 +15,15 @@ function [sub_file,p_num] = make_new_folder(x_num,tr_num,main_workdir,exp_workdi
 %             
 % written by Joel V Joseph (josephjo@post.bgu.ac.il)
 
+%% ADD GAP-FILLING LIBRARIES
+
+addpath('mocaptoolbox');
+addpath('MoCapToolboxExtension');
+
 %% CREATE SUJECT FILE
 
 % Create subject file name to navigate to directory
-sub_file=strcat(exp_workdir,'\',x_num);
+sub_file = strcat(exp_workdir,'\',x_num);
 
 % Subject ID + Experiment Condition
 p_num=strcat(x_num,'_',tr_num);
